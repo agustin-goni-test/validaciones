@@ -116,9 +116,6 @@ class EquifaxClient:
 
     def obtain_report_corporation(self, rut: str) -> dict:
         '''Obtain report for corporation'''
-        
-        # Point to report API URL
-        url = os.getenv("URL_REPORT")
 
         # Add headers
         headers = {
@@ -154,6 +151,45 @@ class EquifaxClient:
         result = response.json()
         return result
 
+
+    def obtener_report_person(self, rut: str) -> dict:
+        '''Obtain report for person'''
+
+
+        # Add headers
+        headers = {
+            "Authorization": f"Bearer {self.token_natural}",
+            "Content-Type": "application/json"
+        }
+
+        # Add payload in a specific format. Only the RUT varies
+        payload = {
+            "applicants": {
+                "primaryConsumer": {
+                    "personalInformation": {
+                        "chileanRut": rut,
+                        "chileanSerialNumber": "10848699"
+                    }
+                }
+            },
+            "productData": {
+                "billTo": "CL000724B001",
+                "shipTo": "CL000724B001S001",
+                "productName": "CLPLAT",
+                "productOrch": "PLATV1",
+                "configuration": "Config",
+                "customer": "CLPLATISWITCH",
+                "model": "PLATISWITCH"
+            }
+        }
+
+        # Send request and raise for status
+        response = requests.post(self.request_url, headers=headers, json=payload)
+        response.raise_for_status()
+
+        # Obtain response and return
+        result = response.json()
+        return result
 
 
 _equifax_client_instance: Optional[EquifaxClient] = None
