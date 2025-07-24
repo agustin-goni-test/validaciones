@@ -56,8 +56,43 @@ class PluttoClient:
             raise RuntimeError(
             f"Unexpected response from Plutto API: "
             f"status={response.status_code}, body={response.text}"
-    )
+            )
         
+
+    def obtain_validation(self, rut: str) -> bool:
+        
+        # Build the required URL
+        url = self.base_url + self.endpoint_validation
+
+        # Add headers
+        headers = {
+            'accept': 'application/json',
+            'Content-Type': 'application/json',
+            'authorization': f'Bearer {self.token}'
+        }
+        
+        payload = {
+            "entity_validation":{
+            "country": "CL",
+            "tin": f"{rut}"
+            }
+        }
+
+        if self.debug:
+            print(url)
+            print(payload)
+
+        response = requests.post(url=url, headers=headers, json=payload)
+
+        if response.status_code == 201:
+            if self.debug: print("Creación del informe exitosa...")
+            return True
+        else:
+            print("Algo salió mal...")
+            raise RuntimeError(
+            f"Unexpected response from Plutto API: "
+            f"status={response.status_code}, body={response.text}"
+            )
 
 
     

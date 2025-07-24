@@ -11,17 +11,17 @@ def main():
     # test_equifax_client()
 
     # Test if the Plutto client is working OK
-    test_plutto_client()
+    # test_plutto_client_by_tin()
+    test_plutto_client_validation()
 
     print("\nThe end")
 
 
-def test_plutto_client():
+def test_plutto_client_by_tin():
     
     plutto_client = get_plutto_client()
-
+    
     rut = "76431161-2"
-
     found, report = plutto_client.obtain_validation_by_tin(rut)
 
     if found:
@@ -30,6 +30,19 @@ def test_plutto_client():
     else:
         print("El informe no estaba disponible en el servicio.")
 
+def test_plutto_client_validation():
+    
+    plutto_client = get_plutto_client()
+    rut = "76934499-3"
+
+    created = plutto_client.obtain_validation(rut)
+
+    if created:
+        found, report = plutto_client.obtain_validation_by_tin(rut)
+        if found:
+            print(json.dumps(report, indent=4))
+        else:
+            print("Error al obtener informe")
 
 
 def test_equifax_client():
