@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from clients.equifax_client import get_equifax_client
 from clients.plutto_client import get_plutto_client
 import json
+from preparation import ValidationControlFlow
 
 load_dotenv()
 
@@ -13,10 +14,35 @@ def main():
     # Test if the Plutto client is working OK
     # test_plutto_client_by_tin()
     # test_plutto_client_validation()
-    test_plutto_client_validation_by_id()
+    # test_plutto_client_validation_by_id()
     # test_plutto_client_watchlists()
 
+    validation_control_flow()
+
     print("\nThe end")
+
+
+def validation_control_flow():
+
+    # Initialize the validation control flow with the Excel file path
+    excel_file = "Datos clientes.xlsx"
+    validation_flow = ValidationControlFlow(excel_file)
+
+    if validation_flow.df.empty:
+        print("El Excel no contiene datos.")
+        return
+    else:
+        print(f"Datos cargados correctamente con {len(validation_flow.df)} filas.")
+        validation_flow.prepare_data()
+
+    # Perform operations on the DataFrame
+    # For example, you can modify the DataFrame here
+    # validation_flow.df['new_column'] = 'value'
+
+
+
+    # Save the DataFrame back to the Excel file
+    validation_flow.save_to_excel()
 
 
 def test_plutto_client_by_tin():
