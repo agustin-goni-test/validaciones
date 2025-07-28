@@ -10,6 +10,7 @@ class PluttoClient:
         token: str,
         endpoint_validation_by_tin: str,
         endpoint_validation: str,
+        endpoint_validation_for_wl: str,
         endpoint_watchlists: str,
         debug: bool
     ):
@@ -17,6 +18,7 @@ class PluttoClient:
         self.token = token
         self.endpoint_validation_by_tin = endpoint_validation_by_tin
         self.endpoint_validation = endpoint_validation
+        self.endpoint_validation_for_wl = endpoint_validation_for_wl
         self.endpoint_watchlists = endpoint_watchlists
         self.debug = True if debug == "true" else False
 
@@ -93,8 +95,77 @@ class PluttoClient:
             f"Unexpected response from Plutto API: "
             f"status={response.status_code}, body={response.text}"
             )
+        
+        
+    def obtain_validation_by_id(self, id: str) -> tuple[bool, str]:
+        '''Obtain validation by ID'''
+
+        found = False
+
+        # Build the required URL
+        url = self.base_url + self.endpoint_validation + "/" + id
+
+        if self.debug:
+            print("Ejecutando validación por ID...")
+            print(url)
+
+        # Add headers
+        headers = {
+            'accept': 'application/json',
+            'authorization': f'Bearer {self.token}'
+        }
+
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 404:
+            if self.debug: print("Informe no encontrado, retornará False")
+            found = False
+            return found, None
+        
+        elif response.status_code == 200:
+            if self.debug: print("Informe encontrado, retornará JSON")
+            found = True
+            report = response.json()
+            return found, report
+        
+        else:
+            raise RuntimeError(
+                f"Unexpected response from Plutto API: "
+                f"status={response.status_code}, body={response.text}"
+            )
 
 
+    def obtain_watchlists(self, id: str) -> tuple[bool, str]:
+        '''Obtain watchlists for a given ID'''
+
+        found = False
+
+        # Build the required URL
+        url = self.base_url + self.endpoint_validation_by_id + id + self.endpoint_watchlists
+
+        if self.debug:
+            print("Ejecutando validación por ID...")
+            print(url)
+
+        # Add headers
+        headers = {
+            'accept': 'application/json',
+            'authorization': f'Bearer {self.token}'
+        }
+
+        response = requests.get(url, headers=headers)
+
+        # If the report was found, return true and the report
+        if response.status_code == 200:
+            found = True
+            report = response.json()
+            return found, report
+        
+        else:
+            raise RuntimeError(
+                f"Unexpected response from Plutto API: "
+                f"status={response.status_code}, body={response.text}"
+            )
     
 
 
@@ -111,6 +182,7 @@ def get_plutto_client() -> PluttoClient:
         token = os.getenv("TOKEN_PLUTTO")
         endpoint_validation_by_tin = os.getenv("ENDPOINT_VALIDATION_BY_TIN")
         endpoint_validation = os.getenv("ENDPOINT_VALIDATION")
+        endpoint_validation_for_wl = os.getenv("ENDPOINT_VALIDATION_FOR_WL")
         endpoint_watchlists = os.getenv("ENDPOINT_WATCHLISTS")
         debug = os.getenv("DEBUG")
 
@@ -120,6 +192,7 @@ def get_plutto_client() -> PluttoClient:
             token,
             endpoint_validation_by_tin,
             endpoint_validation,
+            endpoint_validation_for_wl,
             endpoint_watchlists,
         ):
             missing = []
@@ -127,6 +200,7 @@ def get_plutto_client() -> PluttoClient:
             if token is None: missing.append("TOKEN_PLUTTO")
             if endpoint_validation_by_tin is None: missing.append("ENDPOINT_VALIDATION_BY_TIN")
             if endpoint_validation is None: missing.append("ENDPOINT_VALIDATION")
+            if endpoint_validation_for_wl is None: missing.append("ENDPOINT_VALIDATION_FOR_WL")
             if endpoint_watchlists is None: missing.append("ENDPOINT_WATCHLISTS")
 
             raise RuntimeError(
@@ -139,6 +213,7 @@ def get_plutto_client() -> PluttoClient:
             token=token,
             endpoint_validation_by_tin=endpoint_validation_by_tin,
             endpoint_validation=endpoint_validation,
+            endpoint_validation_for_wl=endpoint_validation_for_wl,
             endpoint_watchlists=endpoint_watchlists,
             debug=debug
         )

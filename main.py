@@ -12,7 +12,9 @@ def main():
 
     # Test if the Plutto client is working OK
     # test_plutto_client_by_tin()
-    test_plutto_client_validation()
+    # test_plutto_client_validation()
+    test_plutto_client_validation_by_id()
+    # test_plutto_client_watchlists()
 
     print("\nThe end")
 
@@ -30,6 +32,7 @@ def test_plutto_client_by_tin():
     else:
         print("El informe no estaba disponible en el servicio.")
 
+
 def test_plutto_client_validation():
     
     plutto_client = get_plutto_client()
@@ -43,6 +46,34 @@ def test_plutto_client_validation():
             print(json.dumps(report, indent=4))
         else:
             print("Error al obtener informe")
+
+
+def test_plutto_client_validation_by_id():
+
+    plutto_client = get_plutto_client()
+    id = "evl_b92418dca42f4238"
+
+    found, report = plutto_client.obtain_validation_by_id(id)
+
+    if found:
+        print("El informe fue obtenido con éxito.")
+        print(json.dumps(report, indent=4))
+    else:
+        print("El informe no estaba disponible en el servicio.")
+
+
+def test_plutto_client_watchlists():
+    plutto_client = get_plutto_client()
+    id = "evl_b92418dca42f4238"
+
+    found, report = plutto_client.obtain_watchlists(id)
+
+    if found:
+        print("El informe de watchlists fue obtenido con éxito.")
+        print(json.dumps(report, indent=4))
+    else:
+        print("El informe de watchlists no estaba disponible en el servicio.")
+
 
 
 def test_equifax_client():
