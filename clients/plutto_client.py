@@ -135,13 +135,13 @@ class PluttoClient:
             )
 
 
-    def obtain_watchlists(self, id: str) -> tuple[bool, str]:
+    def obtain_watchlists(self, id: str) -> tuple[bool, dict]:
         '''Obtain watchlists for a given ID'''
 
         found = False
 
         # Build the required URL
-        url = self.base_url + self.endpoint_validation_by_id + id + self.endpoint_watchlists
+        url = self.base_url + self.endpoint_validation_for_wl + id + self.endpoint_watchlists
 
         if self.debug:
             print("Ejecutando validación por ID...")

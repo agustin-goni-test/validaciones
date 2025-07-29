@@ -3,6 +3,7 @@ import os
 import tempfile
 import shutil
 from clients.plutto_client import get_plutto_client
+import time
 
 class ValidationControlFlow:
     def __init__(self, excel_file: str):
@@ -39,21 +40,21 @@ class ValidationControlFlow:
 
         # Run the preparation process by block of rows, from 0 to the size of the DataFrame
         # Use a set block size to avoid memory issues
-        block_size = 10
+        block_size = 50
         for start in range(0, len(self.df), block_size):
 
             end = min(start + block_size, len(self.df))
             block = self.df.iloc[start:end]
 
 
-            print(f"Processing rows {start} to {end - 1}...") 
+            print(f"Procesando filas {start} a {end - 1}...") 
 
             self._prepare_block(block)
 
             self.save_to_excel()
-            input("Continue to the next block...")
+            # input("Continuar con el siguiente bloque...")
 
-            
+            time.sleep(10)
 
         
     def _validate_prepation_columns(self) -> None:
@@ -61,7 +62,7 @@ class ValidationControlFlow:
         if 'Rut' not in self.df.columns:
             raise ValueError("La columna 'Rut' no existe en el DataFrame.")
 
-        required_columns = ['Existe informe', 'Informe solicitado']
+        required_columns = ['Existe informe', 'Informe solicitado', 'Disponible']
 
         for col in required_columns:
             if col not in self.df.columns:
@@ -80,34 +81,53 @@ class ValidationControlFlow:
 
             # Check if the report already existed, or if it has been requested.
             # Only use the services if it hasn't been requested yet.
-            if row['Existe informe'] == "No" and row['Informe solicitado'] == "No":
+            if row['Disponible'] == "No":
 
                 # Here you would call the Plutto client to get the report
-                found, report = plutto_client.obtain_validation_by_tin(rut)
-                self.df.at[index, 'Existe informe'] = "Sí" if found else "No"
+                found, _ = plutto_client.obtain_validation_by_tin(rut)
+                
+                # If report was found
+                if found:
+                    self.df.at[index, 'Existe informe'] = "Sí"
+                    self.df.at[index, 'Disponible'] = "Si"
+                    print(f"Informe para el RUT {rut} ya estaba disponible.")
 
-                if not found:
+                # Else (report not found, 404, must create it)
+                else:
                     print(f"Informe no exitía. Solicitando informe para el RUT {rut}")
+                    
+                    # Create report
                     created = plutto_client.obtain_validation(rut)
+                    
+                    # If creation worked
                     if created:
+                        # Report requestes (not existing)
                         self.df.at[index, 'Informe solicitado'] = "Sí"
-                        self.df.at[index, 'Existe informe'] = "Sí"
+                        # Report will be available
+                        self.df.at[index, 'Disponible'] = "Sí"
                         print("Informe solicitado exitosamente.")
+                    
+                    # If it didn't work
                     else:
+                        # Report not requested (request failed) and hence not available
                         self.df.at[index, 'Informe solicitado'] = "No"
+                        self.df.at[index, 'Disponible'] = "No"
                         print("No se pudo solicitar el informe.")
 
-                else:
-                    print(f"Informe ya existía para el RUT {rut}.")
-
             else:  
-                print(f"El informe para el RUT {rut} ya existe o ha sido solicitado previamente.")
-                self.df.at[index, 'Informe solicitado'] = "Si"
-                self.df.at[index, 'Existe informe'] = "Si"
+                print(f"El informe para el RUT {rut} ya estaba disponible.")
+                            
             
-   
+    def validate_availability(self) -> bool:
+        '''Validate if all reports are already available.
+        If not, returns False'''
         
-
+        # Check if columns "Disponible" exists in DataFrame
+        if 'Disponible' not in self.df.columns:
+            print(f"Columna 'Disponible' no encontrada en el archivo. Es necesario preparar los datos primero.")
+            return False
+        
+        # else:
 
 
     def save_to_excel(self) -> None:

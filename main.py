@@ -3,6 +3,7 @@ from clients.equifax_client import get_equifax_client
 from clients.plutto_client import get_plutto_client
 import json
 from preparation import ValidationControlFlow
+from library.plutto_components import WatchlistResponse
 
 load_dotenv()
 
@@ -16,8 +17,12 @@ def main():
     # test_plutto_client_validation()
     # test_plutto_client_validation_by_id()
     # test_plutto_client_watchlists()
+    test_plutto_watchlist_response()
 
-    validation_control_flow()
+    
+    # validation_control_flow()
+
+
 
     print("\nThe end")
 
@@ -33,16 +38,32 @@ def validation_control_flow():
         return
     else:
         print(f"Datos cargados correctamente con {len(validation_flow.df)} filas.")
+
         validation_flow.prepare_data()
-
-    # Perform operations on the DataFrame
-    # For example, you can modify the DataFrame here
-    # validation_flow.df['new_column'] = 'value'
-
 
 
     # Save the DataFrame back to the Excel file
     validation_flow.save_to_excel()
+
+
+def test_plutto_watchlist_response():
+    
+    plutto_client = get_plutto_client()
+    
+    watchlist = None
+
+    found, watchlist_json = plutto_client.obtain_watchlists("evl_a133b8bb2f8ea61a")
+
+
+    if found:
+        watchlist_response = WatchlistResponse(watchlist_json)
+        watchlist = watchlist_response.watchlists[0] if watchlist_response.watchlists else None
+        print(f"Watchlist obtenida con éxito para {watchlist.watchlistable_name}.")
+        
+        # Obtain the number of hits in the variable watchlist
+        hits = len(watchlist.hits[0].list_matches)
+        print(f"Número de hits: {hits}")
+
 
 
 def test_plutto_client_by_tin():
@@ -99,7 +120,6 @@ def test_plutto_client_watchlists():
         print(json.dumps(report, indent=4))
     else:
         print("El informe de watchlists no estaba disponible en el servicio.")
-
 
 
 def test_equifax_client():
