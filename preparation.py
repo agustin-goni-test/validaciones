@@ -41,7 +41,7 @@ class ValidationControlFlow:
 
         # Run the preparation process by block of rows, from 0 to the size of the DataFrame
         # Use a set block size to avoid memory issues
-        block_size = 120
+        block_size = 100
         for start in range(0, len(self.df), block_size):
 
             end = min(start + block_size, len(self.df))
@@ -55,9 +55,9 @@ class ValidationControlFlow:
             self.save_to_excel()
             # input("Continuar con el siguiente bloque...")
 
-            # time.sleep(10)
+            time.sleep(5)
 
-            input("Presione Enter para continuar con el siguiente bloque...")
+            # input("Presione Enter para continuar con el siguiente bloque...")
 
         
     def _validate_preparation_columns(self) -> None:
@@ -102,7 +102,7 @@ class ValidationControlFlow:
                 if found:
                     self.df.at[index, 'Existe informe'] = "Sí"
                     id = report.get('entity_validation', {}).get('id', "No")
-                    self.df.at[index, 'Id'] = id
+                    self.df.at[index, 'Id'] = id if id else "No"
                     print(f"Informe para el RUT {rut}, con id {id} ya estaba disponible.")
 
                 # Else (report not found, 404, must create it)
@@ -117,14 +117,14 @@ class ValidationControlFlow:
                         # Report requestes (not existing)
                         self.df.at[index, 'Informe solicitado'] = "Sí"
                         # Report will be available
-                        self.df.at[index, 'Id'] = id
+                        self.df.at[index, 'Id'] = id if id else "No"
                         print(f"Informe solicitado exitosamente, id de comercio: {id}.")
                     
                     # If it didn't work
                     else:
                         # Report not requested (request failed) and hence not available
                         self.df.at[index, 'Informe solicitado'] = "No"
-                        self.df.at[index, 'Disponible'] = "No"
+                        self.df.at[index, 'Id'] = "No"
                         print("No se pudo solicitar el informe.")
 
             else:  
@@ -174,7 +174,9 @@ class ValidationControlFlow:
 
         self._validate_watchlist_columns()
 
-        block_size = 10
+        # Process by block
+        block_size = 120
+        
         for start in range(0, len(self.df), block_size):
             end = min(start + block_size, len(self.df))
             block = self.df.iloc[start:end]
@@ -192,11 +194,12 @@ class ValidationControlFlow:
                 if updated_row is not None:
                     self.df.loc[index] = updated_row
 
-                    # time.sleep(1)
-                input("\n\nContinuar con el siguiente ID...")
+                # time.sleep(3)
+                # input("\n\nContinuar con el siguiente ID...")
 
             # Save the DataFrame block back to the Excel file
             self.save_to_excel()
+            time.sleep(5)
         
         # # Iterate through each row in the DataFrame, by blocks
         # for index, row in self.df.iterrows():

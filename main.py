@@ -34,9 +34,9 @@ def run_watchlist_check():
     excel_file = "Datos clientes.xlsx"
     validation_flow = ValidationControlFlow(excel_file)
 
+    # Start validation workflow
     validation_flow.run_watchilist_workflow()
     
-
 
 
 def validation_control_flow():

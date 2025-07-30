@@ -2,6 +2,7 @@ import json
 import pandas as pd
 import os
 
+
 class OutputController:
     def __init__(
                 self,
@@ -10,7 +11,7 @@ class OutputController:
                 txt_file: str = None,
                 output_folder: str = None
             ):
-        self.cvs_output = csv_file
+        self.csv_output = csv_file
         self.xlsx_output = excel_file
         self.txt_output = txt_file
         self.output_folder = output_folder if output_folder else "output_files"
@@ -18,6 +19,7 @@ class OutputController:
         self.csv_enabled = False
         self.excel_enabled = False
         self.txt_enabled = False
+        self.headers = False
 
 
     def _initialize_output_folder(self):
@@ -38,8 +40,8 @@ class OutputController:
         """
         self._initialize_output_folder()
 
-        if self.csv_enabled and self.cvs_output:
-            self.cvs_output = os.path.join(self.output_folder, self.cvs_output)
+        if self.csv_enabled and self.csv_output:
+            self.csv_output = os.path.join(self.output_folder, self.csv_output)
         
         if self.excel_enabled and self.xlsx_output:
             self.xlsx_output = os.path.join(self.output_folder, self.xlsx_output)
@@ -58,6 +60,12 @@ class OutputController:
         if self.txt_enabled and self.txt_output:
             self._write_to_txt(data)
 
+        if self.csv_enabled and self.csv_output:
+            self._write_to_csv(data)
+
+        if self.excel_enabled and self.xlsx_output:
+            self._write_to_excel(data)
+
 
     def _write_to_txt(self, data: list):
         '''This method writes data to a TXT file
@@ -65,10 +73,56 @@ class OutputController:
 
         # Make sure this output is appended to file
         with open(self.txt_output, 'a') as f:
+            f.write("NL: ")
             # Write each string in the data and then add separator
             for item in data:
                 f.write(f"{item} -- ")
-            f.write("\n")  # New line after each entry   
+            f.write("END\n")  # New line after each entry
+
+    def _write_to_csv(self, data: list):
+        '''This method writes data to a CSV file
+        The input is a list of strings, each string represents a row in the CSV file'''
+
+        df = pd.DataFrame([data])
+        df.to_csv(self.csv_output, mode='a', header=False, index=False)
+
+    def _write_to_excel(self, data: list):
+        """Appends a row to an Excel file. Each string in the list is a column value."""
+
+        df = pd.DataFrame([data])
+
+        if not os.path.exists(self.xlsx_output):
+            # Create a new file with this row
+            df.to_excel(self.xlsx_output, index=False, header=False)
+        
+        else:
+            # Append to existing file
+            with pd.ExcelWriter(self.xlsx_output, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer:
+                # Load current sheet and get max row
+                book = writer.book
+                sheet = book.active
+                startrow = sheet.max_row
+
+                df.to_excel(writer, index=False, header=False, startrow=startrow)
+
+
+    def write_headers(self, data: list) -> bool:
+        
+        if self.headers:
+            return True
+        else:
+
+            if self.csv_enabled:
+                if not os.path.exists(self.csv_output) or os.path.getsize(self.csv_output) == 0:
+                    df = pd.DataFrame(columns=data)
+                    df.to_csv(self.csv_output, mode='w', header=True, index=False)
+
+            if self.excel_enabled:
+                if not os.path.exists(self.xlsx_output) or os.path.getsize(self.xlsx_output) == 0:
+                    df = pd.DataFrame(columns=data)
+                    df.to_excel(self.xlsx_output, index=False, header=True)
+
+
 
 
 
@@ -85,7 +139,7 @@ class OutputController:
             raise ValueError("Debe seleccionar al menos un formato de salida (CSV, TXT o Excel).")
         
         if self.csv_enabled:
-            if not self.cvs_output:
+            if not self.csv_output:
                 raise ValueError("Debe proporcionar un archivo CSV de salida.")
             print(f"Formato de salida seleccionado: CSV={self.csv_enabled}, Excel={self.excel_enabled}")
         
@@ -117,7 +171,7 @@ class OutputController:
 
 
     def save_to_csv(self):
-        with open(self.cvs_output, 'w') as f:
+        with open(self.csv_output, 'w') as f:
             json.dump(self.data, f, indent=4)
         print(f"Data saved to {self.output_file}")
 

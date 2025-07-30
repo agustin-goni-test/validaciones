@@ -8,6 +8,7 @@ class PluttoController:
 
     def __init__(self, plutto_client):
         self.plutto_client = plutto_client
+        self.output_controller = None
 
 
     def check_watchlists(self, row: pd.Series, index: int) -> pd.Series:
@@ -18,11 +19,8 @@ class PluttoController:
         if not self.plutto_client:
             self.plutto_client = get_plutto_client()
 
-        # Initialize the output controller
-        output_controller = OutputController(txt_file="output.txt")
-        
-        # Select output format as TXT for simplicity
-        output_controller.select_output_format(csv_enabled=False, excel_enabled=False, txt_enabled=True)
+        # Initialize the output controller if not already set
+        self.get_output_controller()       
 
         # Create output data as array
         output_data = []
@@ -30,7 +28,25 @@ class PluttoController:
         id = row['Id']
         rut = row['Rut']
 
-        output_data.append(rut)
+        if not self.output_controller.headers:
+            header = [
+                "RUT",
+                "Número",
+                "Nombre",
+                "Total Hits",
+                "Total Blacklist Hits",
+                "Source",
+                "Risk Level",
+                "Hit",
+                "Hit Type",
+                "Risk Level",
+                "Source",
+                "Programa",
+                "Remarks"
+            ]
+
+            self.output_controller.write_headers(header)
+
         
 
         print(f"Revisando refrencias de watchlists en el índice {index} para el RUT {rut} y ID {id}")
@@ -38,6 +54,12 @@ class PluttoController:
         # Early skip condition, if already checked, return
         if row.get("PEP") != "S/I" and row.get("Watchlist") != "S/I":
             print(f"Comercio en índice {index} con RUT y ID {id} ya fue validado. Lo omitiremos")
+            return None
+
+        # Control for error condition
+        if id == "No":
+            # This means the original ID report could not be found. Can`t process it
+            print(f"El comercio {rut} no tiene ID. No es posible obtener su reporte.")
             return None
 
         # Obtain watchlist validation from Plutto client
@@ -53,61 +75,85 @@ class PluttoController:
 
             for watchlist in watchlist_response.watchlists:
                 
-                data_to_write = f"Watchlist #{watchlist_number}"
+                output_data.append(rut)
+                output_data.append(f"Watchlist #{watchlist_number}")
+                output_data.append(f"{watchlist.watchlistable_name}")
+                # data_to_write = f"Watchlist #{watchlist_number}"
                 # output_data.append(f"Watchlist #{watchlist_number}")
 
-                print(f"\nWatchlist #{watchlist_number}:")
                 watchlist_number += 1
-                print(f"Watchlist obtenida con éxito para {watchlist.watchlistable_name}.")
+
                 if not watchlist.hits:
                     print(f"No se encontraron hits para el ID: {id}.")
                     return
                 else:
                     hits = len(watchlist.hits)
 
-                    data_to_write += f" : {hits} hits"
+                    # data_to_write += f" : {hits} hits"
                     
                     # output_data.append(f"Watchlist {watchlist_number - 1}: {hits} hits")
 
-                    print(f"Se encontraron {hits} hits para el ID: {id}.")
-                    print(f"Parámetro total_hits: {watchlist.total_hits}")
-                    print(f"Parámetro total_blacklist_hits: {watchlist.total_blacklist_hits}")
-                    print(f"Parámetro source: {watchlist.source}")
-                    print(f"Parámetro risk_level: {watchlist.risk_level}")
+                    output_data.append(f"{watchlist.total_hits}")
+                    output_data.append(f"{watchlist.total_blacklist_hits}")
+                    output_data.append(f"{watchlist.source}")
+                    output_data.append(f"{watchlist.risk_level}")
+                    
+                    # print(f"Se encontraron {hits} hits para el ID: {id}.")
+                    # print(f"Parámetro total_hits: {watchlist.total_hits}")
+                    # print(f"Parámetro total_blacklist_hits: {watchlist.total_blacklist_hits}")
+                    # print(f"Parámetro source: {watchlist.source}")
+                    # print(f"Parámetro risk_level: {watchlist.risk_level}")
                     hit_number = 1
 
                     for hit in watchlist.hits:
-                        print(f"\nHit #{hit_number}:")
-                        print(f"Nombre: {hit.full_name}")
-                        print(f"Hit type: {hit.hit_type}")
-                        print(f"Risk level: {hit.risk_level}")
+                        
+                        output_data.append(f"{hit.full_name}")
+                        output_data.append(f"{hit.hit_type}")
+                        output_data.append(f"{hit.risk_level}")
+                        
+                        # print(f"\nHit #{hit_number}:")
+                        # print(f"Nombre: {hit.full_name}")
+                        # print(f"Hit type: {hit.hit_type}")
+                        # print(f"Risk level: {hit.risk_level}")
                         hit_number += 1
 
                         list_match_number = 1
 
-                        list_matches = len(hit.list_matches)
-                        data_to_write += f" : {list_matches} matches"
+                        # list_matches = len(hit.list_matches)
+                        # data_to_write += f" : {list_matches} matches"
 
-                        output_data.append(data_to_write)
+                        # output_data.append(data_to_write)
 
                         if not hit.list_matches:
-                            print("No se encontraron coincidencias en las listas para este hit.")
+
+                            output_data.append("N/A")
+                            output_data.append("N/A")
+                            output_data.append("N/A")
 
                         for list_match in hit.list_matches:
-                            print(f"\nCoincidencia #{list_match_number}:")
+
+                            output_data.append(f"{list_match.source}")
+                            output_data.append(f"{list_match.program}")
+                            output_data.append(f"{list_match.remarks}")
+
+                            # print(f"\nCoincidencia #{list_match_number}:")
                             list_match_number += 1
-                            print(f"source: {list_match.source}")
-                            print(f"program: {list_match.program}")
-                            print(f"remarks: {list_match.remarks}")
+                            # print(f"source: {list_match.source}")
+                            # print(f"program: {list_match.program}")
+                            # print(f"remarks: {list_match.remarks}")
+
+                        self.output_controller.write_output(output_data)
+                        
+                        # Eliminate all elementos in output_data to start over
+                        output_data.clear()
 
             print(f"\nPEP encontrado: {found_pep}")
             print(f"Persona de interés encontrada: {found_person_of_interest}")
             row['PEP'] = "Sí" if found_pep else "No"
             row['Watchlist'] = "Sí" if found_person_of_interest else "No"
 
-            output_data.append("\n")
-            output_controller.write_output(output_data)
-  
+            # output_data.append("\n")
+            # self.output_controller.write_output(output_data
 
             return row
                         
@@ -150,3 +196,17 @@ class PluttoController:
                         
         return found
     
+
+    def get_output_controller(self) -> None:
+        """
+        Returns the OutputController instance.
+        """
+        if self.output_controller is None:
+            self.output_controller = OutputController(excel_file="output.xlsx")
+            self.output_controller.select_output_format(
+                csv_enabled=False,
+                excel_enabled=True,
+                txt_enabled=False
+                )
+        
+
