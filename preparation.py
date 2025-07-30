@@ -4,7 +4,7 @@ import tempfile
 import shutil
 from clients.plutto_client import get_plutto_client
 import time
-from controller.plutto_controller import PluttoController
+from controllers.plutto_controller import PluttoController
 
 class ValidationControlFlow:
     def __init__(self, excel_file: str):

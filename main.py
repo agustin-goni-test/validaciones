@@ -4,7 +4,7 @@ from clients.plutto_client import get_plutto_client
 import json
 from preparation import ValidationControlFlow
 from library.plutto_components import WatchlistResponse
-from controller.plutto_controller import PluttoController
+from controllers.plutto_controller import PluttoController
 
 load_dotenv()
 
@@ -20,9 +20,9 @@ def main():
     # test_plutto_client_watchlists()
     # test_plutto_watchlist_response()
 
-    # run_watchlist_check()
+    run_watchlist_check()
 
-    validation_control_flow()
+    # validation_control_flow()
 
     print("\nThe end")
 

@@ -1,6 +1,7 @@
 from clients.plutto_client import get_plutto_client
 import json
 from library.plutto_components import WatchlistResponse
+from controllers.output_controller import OutputController
 import pandas as pd
 
 class PluttoController:
@@ -17,8 +18,20 @@ class PluttoController:
         if not self.plutto_client:
             self.plutto_client = get_plutto_client()
 
+        # Initialize the output controller
+        output_controller = OutputController(txt_file="output.txt")
+        
+        # Select output format as TXT for simplicity
+        output_controller.select_output_format(csv_enabled=False, excel_enabled=False, txt_enabled=True)
+
+        # Create output data as array
+        output_data = []
+
         id = row['Id']
         rut = row['Rut']
+
+        output_data.append(rut)
+        
 
         print(f"Revisando refrencias de watchlists en el índice {index} para el RUT {rut} y ID {id}")
         
@@ -37,7 +50,12 @@ class PluttoController:
             found_person_of_interest = self._is_person_of_interest(watchlist_response)
 
             watchlist_number = 1
+
             for watchlist in watchlist_response.watchlists:
+                
+                data_to_write = f"Watchlist #{watchlist_number}"
+                # output_data.append(f"Watchlist #{watchlist_number}")
+
                 print(f"\nWatchlist #{watchlist_number}:")
                 watchlist_number += 1
                 print(f"Watchlist obtenida con éxito para {watchlist.watchlistable_name}.")
@@ -46,6 +64,11 @@ class PluttoController:
                     return
                 else:
                     hits = len(watchlist.hits)
+
+                    data_to_write += f" : {hits} hits"
+                    
+                    # output_data.append(f"Watchlist {watchlist_number - 1}: {hits} hits")
+
                     print(f"Se encontraron {hits} hits para el ID: {id}.")
                     print(f"Parámetro total_hits: {watchlist.total_hits}")
                     print(f"Parámetro total_blacklist_hits: {watchlist.total_blacklist_hits}")
@@ -62,6 +85,11 @@ class PluttoController:
 
                         list_match_number = 1
 
+                        list_matches = len(hit.list_matches)
+                        data_to_write += f" : {list_matches} matches"
+
+                        output_data.append(data_to_write)
+
                         if not hit.list_matches:
                             print("No se encontraron coincidencias en las listas para este hit.")
 
@@ -76,6 +104,11 @@ class PluttoController:
             print(f"Persona de interés encontrada: {found_person_of_interest}")
             row['PEP'] = "Sí" if found_pep else "No"
             row['Watchlist'] = "Sí" if found_person_of_interest else "No"
+
+            output_data.append("\n")
+            output_controller.write_output(output_data)
+  
+
             return row
                         
         else:
