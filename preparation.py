@@ -4,6 +4,7 @@ import tempfile
 import shutil
 from clients.plutto_client import get_plutto_client
 import time
+from controller.plutto_controller import PluttoController
 
 class ValidationControlFlow:
     def __init__(self, excel_file: str):
@@ -36,11 +37,11 @@ class ValidationControlFlow:
             return False
         
         # Validate the required columns
-        self._validate_prepation_columns()
+        self._validate_preparation_columns()
 
         # Run the preparation process by block of rows, from 0 to the size of the DataFrame
         # Use a set block size to avoid memory issues
-        block_size = 50
+        block_size = 120
         for start in range(0, len(self.df), block_size):
 
             end = min(start + block_size, len(self.df))
@@ -54,20 +55,31 @@ class ValidationControlFlow:
             self.save_to_excel()
             # input("Continuar con el siguiente bloque...")
 
-            time.sleep(10)
+            # time.sleep(10)
+
+            input("Presione Enter para continuar con el siguiente bloque...")
 
         
-    def _validate_prepation_columns(self) -> None:
+    def _validate_preparation_columns(self) -> None:
 
         if 'Rut' not in self.df.columns:
             raise ValueError("La columna 'Rut' no existe en el DataFrame.")
 
-        required_columns = ['Existe informe', 'Informe solicitado', 'Disponible']
+        required_columns = ['Existe informe', 'Informe solicitado', "Id"]
 
         for col in required_columns:
             if col not in self.df.columns:
                 self.df[col] = "No"
                 print("Columna agregada:", col)
+
+    def _validate_watchlist_columns(self) -> None:
+        required_columns = ['PEP', 'Watchlist']
+
+        for col in required_columns:
+            if col not in self.df.columns:
+                self.df[col] = "S/I"
+                print("Columna agregada:", col)
+
 
 
     def _prepare_block(self, block: pd.DataFrame) -> None:
@@ -81,31 +93,32 @@ class ValidationControlFlow:
 
             # Check if the report already existed, or if it has been requested.
             # Only use the services if it hasn't been requested yet.
-            if row['Disponible'] == "No":
+            if row['Id'] == "No":
 
                 # Here you would call the Plutto client to get the report
-                found, _ = plutto_client.obtain_validation_by_tin(rut)
+                found, report = plutto_client.obtain_validation_by_tin(rut)
                 
                 # If report was found
                 if found:
                     self.df.at[index, 'Existe informe'] = "Sí"
-                    self.df.at[index, 'Disponible'] = "Si"
-                    print(f"Informe para el RUT {rut} ya estaba disponible.")
+                    id = report.get('entity_validation', {}).get('id', "No")
+                    self.df.at[index, 'Id'] = id
+                    print(f"Informe para el RUT {rut}, con id {id} ya estaba disponible.")
 
                 # Else (report not found, 404, must create it)
                 else:
                     print(f"Informe no exitía. Solicitando informe para el RUT {rut}")
                     
                     # Create report
-                    created = plutto_client.obtain_validation(rut)
+                    created, id = plutto_client.obtain_validation(rut)
                     
                     # If creation worked
                     if created:
                         # Report requestes (not existing)
                         self.df.at[index, 'Informe solicitado'] = "Sí"
                         # Report will be available
-                        self.df.at[index, 'Disponible'] = "Sí"
-                        print("Informe solicitado exitosamente.")
+                        self.df.at[index, 'Id'] = id
+                        print(f"Informe solicitado exitosamente, id de comercio: {id}.")
                     
                     # If it didn't work
                     else:
@@ -147,5 +160,52 @@ class ValidationControlFlow:
         except Exception as e:
             raise RuntimeError(f"Failed to save Excel file '{self.filename}': {str(e)}")
 
+
+    def run_watchilist_workflow(self) -> bool:
+        """
+        Runs the workflow to check watchlists for each RUT in the DataFrame.
+        """
+
+        # Get Plutto client instance
+        plutto_client = get_plutto_client()
+
+        # Initialize the controller
+        controller = PluttoController(plutto_client)
+
+        self._validate_watchlist_columns()
+
+        block_size = 10
+        for start in range(0, len(self.df), block_size):
+            end = min(start + block_size, len(self.df))
+            block = self.df.iloc[start:end]
+
+            print(f"Procesando filas {start} a {end - 1}...") 
+
+            # Iterate through each row in the block
+            for index, row in block.iterrows():
+                id = row['Id']
+                print(f"Revisando watchlists para el ID: {id}")
+
+                # Call the controller to check watchlists
+                updated_row = controller.check_watchlists(row, index)
+
+                if updated_row is not None:
+                    self.df.loc[index] = updated_row
+
+                    # time.sleep(1)
+                input("\n\nContinuar con el siguiente ID...")
+
+            # Save the DataFrame block back to the Excel file
+            self.save_to_excel()
+        
+        # # Iterate through each row in the DataFrame, by blocks
+        # for index, row in self.df.iterrows():
+        #     id = row['Id']
+        #     print(f"Revisando watchlists para el ID: {id}")
+
+        #     # Call the controller to check watchlists
+        #     controller.check_watchlists(row, index)
+
+        #     input("\n\nContinuar con el siguiente ID...")
 
 

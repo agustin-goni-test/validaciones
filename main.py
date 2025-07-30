@@ -4,6 +4,7 @@ from clients.plutto_client import get_plutto_client
 import json
 from preparation import ValidationControlFlow
 from library.plutto_components import WatchlistResponse
+from controller.plutto_controller import PluttoController
 
 load_dotenv()
 
@@ -17,14 +18,25 @@ def main():
     # test_plutto_client_validation()
     # test_plutto_client_validation_by_id()
     # test_plutto_client_watchlists()
-    test_plutto_watchlist_response()
+    # test_plutto_watchlist_response()
 
-    
-    # validation_control_flow()
+    # run_watchlist_check()
 
-
+    validation_control_flow()
 
     print("\nThe end")
+
+
+def run_watchlist_check():
+    plutto_client = get_plutto_client()
+    
+    # Initialize the validation control flow with the Excel file path
+    excel_file = "Datos clientes.xlsx"
+    validation_flow = ValidationControlFlow(excel_file)
+
+    validation_flow.run_watchilist_workflow()
+    
+
 
 
 def validation_control_flow():

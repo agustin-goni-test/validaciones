@@ -61,7 +61,7 @@ class PluttoClient:
             )
         
 
-    def obtain_validation(self, rut: str) -> bool:
+    def obtain_validation(self, rut: str) -> tuple[bool, str]:
         
         # Build the required URL
         url = self.base_url + self.endpoint_validation
@@ -86,9 +86,17 @@ class PluttoClient:
 
         response = requests.post(url=url, headers=headers, json=payload)
 
+        report = response.json()
+        id = report.get('id', None)
+
         if response.status_code == 201:
             if self.debug: print("Creación del informe exitosa...")
-            return True
+            return True, id
+        
+        elif response.status_code == 422:
+            print("Error en el request. No se puede procesar.")
+            return False, None
+        
         else:
             print("Algo salió mal...")
             raise RuntimeError(
@@ -160,6 +168,11 @@ class PluttoClient:
             found = True
             report = response.json()
             return found, report
+        
+        elif response.status_code == 500:
+            print(f"Error 500 en request para ID {id}.")
+            return False, None
+
         
         else:
             raise RuntimeError(
