@@ -175,7 +175,7 @@ class ValidationControlFlow:
         self._validate_watchlist_columns()
 
         # Process by block
-        block_size = 120
+        block_size = 50
         
         for start in range(0, len(self.df), block_size):
             end = min(start + block_size, len(self.df))
