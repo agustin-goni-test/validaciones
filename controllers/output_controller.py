@@ -11,12 +11,12 @@ class OutputController:
                 txt_file: str = None,
                 output_folder: str = None
             ):
-        self.csv_output = csv_file
-        self.xlsx_output = excel_file
-        self.txt_output = txt_file
+        self.csv_output = csv_file  # CSV file to use
+        self.xlsx_output = excel_file # Excel file to use
+        self.txt_output = txt_file  # Text file to use
         self.output_folder = output_folder if output_folder else "output_files"
         self.data = []
-        self.csv_enabled = False
+        self.csv_enabled = False # Define output type. Could be several
         self.excel_enabled = False
         self.txt_enabled = False
         self.headers = False
@@ -27,6 +27,7 @@ class OutputController:
         Initializes the output folder if it does not exist.
         """
         
+        # Check if output folder exists. If not, create it
         if not os.path.exists(self.output_folder):
             os.makedirs(self.output_folder)
             print(f"Output folder created: {self.output_folder}")
@@ -40,12 +41,15 @@ class OutputController:
         """
         self._initialize_output_folder()
 
+        # If CSV is selected, create the full path
         if self.csv_enabled and self.csv_output:
             self.csv_output = os.path.join(self.output_folder, self.csv_output)
         
+        # If Excel is selected, create the full path
         if self.excel_enabled and self.xlsx_output:
             self.xlsx_output = os.path.join(self.output_folder, self.xlsx_output)
         
+        # If TXT is selected, create the full path
         if self.txt_enabled and self.txt_output:
             self.txt_output = os.path.join(self.output_folder, self.txt_output)
 
@@ -60,9 +64,11 @@ class OutputController:
         if self.txt_enabled and self.txt_output:
             self._write_to_txt(data)
 
+        # If CSV is selected, write line to CSV
         if self.csv_enabled and self.csv_output:
             self._write_to_csv(data)
 
+        # If CSV is selected, write line to Excel
         if self.excel_enabled and self.xlsx_output:
             self._write_to_excel(data)
 
@@ -107,16 +113,23 @@ class OutputController:
 
 
     def write_headers(self, data: list) -> bool:
+        '''Method to write headers for a file. It only works when
+        the file is just created or empty'''
         
+        # This method might need refactoring.
+        # self.headers is not actually relevant
+
         if self.headers:
             return True
         else:
 
+            # If CSV is selected
             if self.csv_enabled:
                 if not os.path.exists(self.csv_output) or os.path.getsize(self.csv_output) == 0:
                     df = pd.DataFrame(columns=data)
                     df.to_csv(self.csv_output, mode='w', header=True, index=False)
 
+            # If Excel is selected
             if self.excel_enabled:
                 if not os.path.exists(self.xlsx_output) or os.path.getsize(self.xlsx_output) == 0:
                     df = pd.DataFrame(columns=data)
