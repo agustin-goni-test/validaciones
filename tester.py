@@ -26,7 +26,7 @@ def main():
     # Test methods related to GESINTEL
     ######################################
 
-    # test_get_aml_result()
+    test_get_aml_result()
     # test_get_aml_risk()
     # test_get_aml_report()
     # test_get_flag_results()
@@ -46,7 +46,7 @@ def main():
 def test_get_aml_result():
     '''Test getAMLResult method by using GET'''
 
-    rut = "73426464"
+    rut = "771253296"
 
     try:
         gesintel_client = get_gestintel_client()

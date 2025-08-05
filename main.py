@@ -20,7 +20,7 @@ def main():
     # test_plutto_client_watchlists()
     # test_plutto_watchlist_response()
 
-    run_watchlist_check()
+    run_gesintel_watchlist_check()
 
     # validation_control_flow()
 
@@ -37,6 +37,14 @@ def run_watchlist_check():
     # Start validation workflow
     validation_flow.run_watchilist_workflow()
     
+def run_gesintel_watchlist_check():
+    # Initialize the validation control flow with the Excel file path
+    excel_file = "Datos clientes.xlsx"
+    validation_flow = ValidationControlFlow(excel_file)
+
+    # Start the Gesintel validation workflow
+    validation_flow.run_gesintel_watchlist_workflow()
+
 
 
 def validation_control_flow():

@@ -3,8 +3,11 @@ import os
 import tempfile
 import shutil
 from clients.plutto_client import get_plutto_client
+from clients.gesintel_client import get_gestintel_client
 import time
 from controllers.plutto_controller import PluttoController
+from controllers.gesintel_controller import GesintelController
+
 
 class ValidationControlFlow:
     def __init__(self, excel_file: str):
@@ -72,6 +75,7 @@ class ValidationControlFlow:
                 self.df[col] = "No"
                 print("Columna agregada:", col)
 
+    
     def _validate_watchlist_columns(self) -> None:
         required_columns = ['PEP', 'Watchlist']
 
@@ -79,7 +83,6 @@ class ValidationControlFlow:
             if col not in self.df.columns:
                 self.df[col] = "S/I"
                 print("Columna agregada:", col)
-
 
 
     def _prepare_block(self, block: pd.DataFrame) -> None:
@@ -210,5 +213,30 @@ class ValidationControlFlow:
         #     controller.check_watchlists(row, index)
 
         #     input("\n\nContinuar con el siguiente ID...")
+
+    
+    def run_gesintel_watchlist_workflow(self, block_size: int = 10):
+        
+        gesintel_client = get_gestintel_client()
+        
+        controller = GesintelController(gesintel_client)
+        total_rows = len(self.df)
+
+        # Process by block
+        block_size = 10
+
+        for start in range(0, total_rows, block_size):
+            end = min(start + block_size, total_rows)
+            block = self.df.iloc[start:end]
+
+            print(f"Procesando filas {start} to {end - 1}")
+
+            for index, row in block.iterrows():
+                rut = row['Rut']
+                # print(f"Vamos a procesar comercio {rut}...")
+                
+                controller.check_watchlists(row, index)
+
+            # input("Continuar...")
 
 
