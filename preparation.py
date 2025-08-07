@@ -85,6 +85,15 @@ class ValidationControlFlow:
                 print("Columna agregada:", col)
 
 
+    def _validate_gestintel_watchlist_columns(self) -> None:
+        required_columns = ['PEP Ges']
+
+        for col in required_columns:
+            if col not in self.df.columns:
+                self.df[col] = "S/I"
+                print("Columna agregada:", col)
+
+
     def _prepare_block(self, block: pd.DataFrame) -> None:
 
         plutto_client = get_plutto_client()
@@ -220,12 +229,18 @@ class ValidationControlFlow:
         gesintel_client = get_gestintel_client()
         
         controller = GesintelController(gesintel_client)
+
+        self._validate_gestintel_watchlist_columns()
+
         total_rows = len(self.df)
 
-        # Process by block
-        block_size = 10
+        # Starting point for the frame
+        initial_position = 0
 
-        for start in range(0, total_rows, block_size):
+        # Process by block
+        block_size = 5
+
+        for start in range(initial_position, total_rows, block_size):
             end = min(start + block_size, total_rows)
             block = self.df.iloc[start:end]
 
@@ -235,8 +250,14 @@ class ValidationControlFlow:
                 rut = row['Rut']
                 # print(f"Vamos a procesar comercio {rut}...")
                 
-                controller.check_watchlists(row, index)
+                updated_row = controller.check_watchlists(row, index)
+
+                if updated_row is not None:
+                    self.df.loc[index] = updated_row
 
             # input("Continuar...")
+            self.save_to_excel()
+            print("Esperando 10 segundos (para no superar el límite de consultas)...")
+            time.sleep(10)
 
 

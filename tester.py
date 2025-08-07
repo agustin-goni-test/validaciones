@@ -7,6 +7,7 @@ from preparation import ValidationControlFlow
 from library.plutto_components import WatchlistResponse
 from controllers.plutto_controller import PluttoController
 import requests
+from library.gesintel_components import AMLResultResponse
 
 load_dotenv()
 
@@ -46,7 +47,11 @@ def main():
 def test_get_aml_result():
     '''Test getAMLResult method by using GET'''
 
-    rut = "771253296"
+    # RUT bien capturado
+    # rut = "765847214"
+
+    # RUT capturado con problemas
+    rut = "61916962"
 
     try:
         gesintel_client = get_gestintel_client()
@@ -61,10 +66,25 @@ def test_get_aml_result():
 
         if found:
             print(f"El reporte para RUT {rut} fue obtenido con éxito...")
-            print(json.dumps(report, indent=4))
+            # print(json.dumps(report, indent=4))
+            in_depth_get_aml_result_test(rut=rut, json_report=report)
 
     except requests.HTTPError as e:
         print(f"Error en la comunicación con la API Gesintel: {e}")
+
+def in_depth_get_aml_result_test(rut: str, json_report: str):
+    print(f"Entrando a la prueba detallada de getAMLResult. RUR: {rut}")
+    print("\nInforme obtenido para el caso:")
+    print(json.dumps(json_report, indent=4))   
+
+    print("\nCreando objeto de reporte")
+    report = AMLResultResponse.model_validate(json_report)
+
+    if report:
+        print("\nObjeto reporte creado con éxito...")
+        print(f"Status: {report.status}")
+        print(f"Message: {report.message}")
+        print(f"Result: {report.results}")
 
 
 def test_get_aml_risk():

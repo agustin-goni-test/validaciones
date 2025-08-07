@@ -1,3 +1,4 @@
 .env
 Datos clientes.xlsx
 output_files/
+casos.json

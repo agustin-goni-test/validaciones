@@ -56,7 +56,7 @@ class Causa(BaseModel):
     etapa: Optional[str] = None
     ubicacion: Optional[str] = None
     fecUbicacion: Optional[str] = None
-    fecDownload: Optional[str] = None
+    fecDownload: Optional[Union[str, int]] = None 
     materia: Optional[str] = None
 
 
@@ -75,6 +75,8 @@ class PJUDResult(BaseModel):
     porcentaje: Optional[float] = None
     fechaCarga: Optional[str] = None
     formatRutDte: Optional[str] = None
+
+
 
 
 # class Results(BaseModel):
@@ -102,8 +104,8 @@ class Results(BaseModel):
     djResults: Optional[List[PersonResult]] = None
     negativeResults: Optional[List[PersonResult]] = Field(default_factory=list)
     vipResults: Optional[List[PersonResult]] = Field(default_factory=list)
-    pepRelacionados: Optional[List[PersonResult]] = Field(default_factory=list)
-    pepHRelacionados: Optional[List[PersonResult]] = Field(default_factory=list)
+    pepRelacionados: Optional[List[PersonResult]] = None
+    pepHRelacionados: Optional[List[PersonResult]] = None
     rut: Optional[str] = None
     name: Optional[str] = None
 
