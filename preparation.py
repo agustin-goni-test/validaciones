@@ -77,8 +77,14 @@ class ValidationControlFlow:
 
     
     def _validate_watchlist_columns(self) -> None:
+        '''This method checks if the control columns needed for Plutto validations
+        are part of the original Excel file. If they don't exist, the method
+        creates them with a default value for each row'''
+        
+        # List the required columns
         required_columns = ['PEP', 'Watchlist']
 
+        # For each required column, if they don't exist, create them
         for col in required_columns:
             if col not in self.df.columns:
                 self.df[col] = "S/I"
@@ -86,8 +92,14 @@ class ValidationControlFlow:
 
 
     def _validate_gestintel_watchlist_columns(self) -> None:
-        required_columns = ['PEP Ges']
+        '''This method checks if the control columns needed for Gesintel validations
+        are part of the original Excel file. If they don't exist, the method
+        creates them with a default value for each row'''
 
+        # List the required columns
+        required_columns = ['PEP Ges', 'Watch Ges']
+
+        # For each required column, if they don't exist, create them
         for col in required_columns:
             if col not in self.df.columns:
                 self.df[col] = "S/I"
@@ -95,6 +107,9 @@ class ValidationControlFlow:
 
 
     def _prepare_block(self, block: pd.DataFrame) -> None:
+        '''Prepares the commerce list for use with Plutto.
+        This is required because we want to make sure the complete Plutto report
+        exists in the service. If it's not there, we will request its creation.'''
 
         plutto_client = get_plutto_client()
 
@@ -225,13 +240,20 @@ class ValidationControlFlow:
 
     
     def run_gesintel_watchlist_workflow(self, block_size: int = 10):
+        '''
+        Run a validation workflow for Gesintel.
+        '''
         
+        # Get the client
         gesintel_client = get_gestintel_client()
         
+        # Create the Gesintel controller using the client
         controller = GesintelController(gesintel_client)
 
+        # Validate if the control columns exist
         self._validate_gestintel_watchlist_columns()
 
+        # Get the size of the DataFrame
         total_rows = len(self.df)
 
         # Starting point for the frame
@@ -240,18 +262,23 @@ class ValidationControlFlow:
         # Process by block
         block_size = 5
 
+        # Move through the DataFrame (file) block by block according to definitions
         for start in range(initial_position, total_rows, block_size):
             end = min(start + block_size, total_rows)
             block = self.df.iloc[start:end]
 
             print(f"Procesando filas {start} to {end - 1}")
 
+            # Within the block, extract the row and the index for each case
             for index, row in block.iterrows():
                 rut = row['Rut']
                 # print(f"Vamos a procesar comercio {rut}...")
                 
+                # Call the validation method. This returns a modified row if there are
+                # changes, or nothing if not
                 updated_row = controller.check_watchlists(row, index)
 
+                # If the new row is not empty (that is, if it changed), replace it
                 if updated_row is not None:
                     self.df.loc[index] = updated_row
 

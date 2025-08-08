@@ -215,7 +215,7 @@ def test_get_entity_record():
 
 
 def test_plutto_watchlist_response():
-    '''Test watchlist method'''
+    '''Test Watchlist endpoint and build a response object'''
     
     plutto_client = get_plutto_client()
     
@@ -235,6 +235,7 @@ def test_plutto_watchlist_response():
 
 
 def test_plutto_client_by_tin():
+    '''Test Validation by TIN endpoint'''
     
     plutto_client = get_plutto_client()
     
@@ -249,6 +250,7 @@ def test_plutto_client_by_tin():
 
 
 def test_plutto_client_validation():
+    '''Test Onbtain Validation endpoint'''
     
     plutto_client = get_plutto_client()
     rut = "76934499-3"
@@ -264,6 +266,7 @@ def test_plutto_client_validation():
 
 
 def test_plutto_client_validation_by_id():
+    '''Test Obtain validation by ID endpoint'''
 
     plutto_client = get_plutto_client()
     id = "evl_b92418dca42f4238"
@@ -278,6 +281,8 @@ def test_plutto_client_validation_by_id():
 
 
 def test_plutto_client_watchlists():
+    '''Test Watchlist endpoint'''
+
     plutto_client = get_plutto_client()
     id = "evl_b92418dca42f4238"
 

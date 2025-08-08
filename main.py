@@ -85,7 +85,6 @@ def test_plutto_watchlist_response():
         print(f"Número de hits: {hits}")
 
 
-
 def test_plutto_client_by_tin():
     
     plutto_client = get_plutto_client()
@@ -101,6 +100,7 @@ def test_plutto_client_by_tin():
 
 
 def test_plutto_client_validation():
+    '''Test method for Obtain Validation by TIN endpoint'''
     
     plutto_client = get_plutto_client()
     rut = "76934499-3"
@@ -116,6 +116,7 @@ def test_plutto_client_validation():
 
 
 def test_plutto_client_validation_by_id():
+    '''Test method for Validation by ID endpoint'''
 
     plutto_client = get_plutto_client()
     id = "evl_b92418dca42f4238"
@@ -130,6 +131,8 @@ def test_plutto_client_validation_by_id():
 
 
 def test_plutto_client_watchlists():
+    '''Test method for Watchlist endpoint'''
+
     plutto_client = get_plutto_client()
     id = "evl_b92418dca42f4238"
 
