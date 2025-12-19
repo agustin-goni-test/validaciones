@@ -97,7 +97,7 @@ class ValidationControlFlow:
         creates them with a default value for each row'''
 
         # List the required columns
-        required_columns = ['PEP Ges', 'Watch Ges']
+        required_columns = ['PEP Ges', 'Watch Ges', "PJ Ges"]
 
         # For each required column, if they don't exist, create them
         for col in required_columns:
@@ -284,7 +284,7 @@ class ValidationControlFlow:
 
             # input("Continuar...")
             self.save_to_excel()
-            print("Esperando 10 segundos (para no superar el límite de consultas)...")
-            time.sleep(10)
+            print("Esperando 2 segundos (para no superar el límite de consultas)...")
+            time.sleep(2)
 
 

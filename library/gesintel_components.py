@@ -1,5 +1,6 @@
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Dict, Any
 from pydantic import BaseModel, Field
+
 
 
 class PersonResult(BaseModel):
@@ -35,11 +36,11 @@ class PersonResult(BaseModel):
     formatRutTitular: Optional[str]
     
     # Optional fields for some result types
-    candidato: Optional[str]
-    jurisdiccion: Optional[str]
-    anoCandidatura: Optional[str]
-    nombreRelacionado: Optional[str]
-    rutRelacionado: Optional[str]
+    candidato: Optional[str] = None
+    jurisdiccion: Optional[str] = None
+    anoCandidatura: Optional[str] = None
+    nombreRelacionado: Optional[str] = None
+    rutRelacionado: Optional[str] = None
 
 
 class Causa(BaseModel):
@@ -101,7 +102,7 @@ class Results(BaseModel):
     fpResults: Optional[List[PersonResult]] = Field(default_factory=list)
     pjudResults: Optional[List[PJUDResult]] = Field(default_factory=list)
     personResults: Optional[List[PersonResult]] = Field(default_factory=list)
-    djResults: Optional[List[PersonResult]] = None
+    djResults: Optional[Dict[str, Any]] = None  # Changed to free-form dict
     negativeResults: Optional[List[PersonResult]] = Field(default_factory=list)
     vipResults: Optional[List[PersonResult]] = Field(default_factory=list)
     pepRelacionados: Optional[List[PersonResult]] = None

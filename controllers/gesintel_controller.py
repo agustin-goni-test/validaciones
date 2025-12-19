@@ -55,7 +55,7 @@ class GesintelController:
 
         
         # Check if the row is already processed
-        if row['PEP Ges'] != "S/I" and row['Watch Ges'] != "S/I":
+        if row['PEP Ges'] != "S/I" and row['Watch Ges'] != "S/I" and row['PJ Ges'] != "S/I":
             print(f"Comercio en índice {index} con RUT y ID {id} ya fue validado. Lo omitiremos")
             return None
 
@@ -66,6 +66,7 @@ class GesintelController:
         found_hits = []
         found_pep = False
         found_watchlist = False
+        found_pj = False
 
         try:
             # Get the report
@@ -101,17 +102,50 @@ class GesintelController:
                 if report.results.pjudResults:
                     hit_data[5] = "Si"
                     found_hits.append("Poder judicial")
-                    found_watchlist = True
+                    # found_watchlist = True
+                    found_pj = True
 
                 if report.results.personResults:
                     hit_data[6] = "Si"
                     found_hits.append("PEP")
                     found_watchlist = True
 
-                if report.results.djResults:
-                    hit_data[7] = "Si"
-                    found_hits.append("dj")
-                    found_pep = True
+                # if (report.results.djResults and 
+                #     report.results.djResults.wlResults and 
+                #     len(report.results.djResults.wlResults) > 0):
+                #     hit_data[7] = "Si"
+                #     found_hits.append("dj")
+                #     found_pep = True
+
+                # This is the logic that will capture watchlist hits
+                if report.results and report.results.djResults:
+                    dj_results = report.results.djResults
+                    
+                    # Check if wlResults exists and has content (WATCHLIST)
+                    wl_exists = ('wlResults' in dj_results and 
+                                dj_results['wlResults'] is not None and 
+                                len(dj_results['wlResults']) > 0)
+                    
+                    # Check if ameResults exists and has content (WATCHLIST)
+                    ame_exists = ('ameResults' in dj_results and 
+                                dj_results['ameResults'] is not None and 
+                                len(dj_results['ameResults']) > 0)
+                    
+                    # Check if socResults exists and has content (PEP)
+                    soc_exists = ('socResults' in dj_results and 
+                                dj_results['socResults'] is not None and 
+                                len(dj_results['socResults']) > 0)
+                    
+                    # Set flags based on conditions
+                    if wl_exists or ame_exists:
+                        found_watchlist = True # Found watchlist hit
+                        hit_data[7] = "Si"  # Assuming this is for watchlist hits
+                        found_hits.append("dj")
+                    
+                    if soc_exists:
+                        hit_data[7] = "Si"
+                        found_pep = True # Found state owned conpany, is PEP
+                        found_hits.append("dj")
 
                 if report.results.negativeResults:
                     hit_data[8] = "Si"
@@ -142,12 +176,14 @@ class GesintelController:
                     print(f"Índice {index}, RUT {rut_original} --- ENCONTRADO, escribiendo en archivo de salida")
                     row['PEP Ges'] = "Si" if found_pep else "No"
                     row['Watch Ges'] = "Si" if found_watchlist else "No"
+                    row['PJ Ges'] = "Si" if found_pj else "No"
                 
                 # If not, declare not found in row
                 else:
                     print(f"Índice {index}, RUT {rut_original} --- no encontrado... escribiendo en archivo de salida")
                     row['PEP Ges'] = "No"
                     row['Watch Ges'] = "No"
+                    row['PJ Ges'] = "No"
 
                 return row
 
