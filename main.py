@@ -17,10 +17,14 @@ def main():
     # test_plutto_client_by_tin()
     # test_plutto_client_validation()
     # test_plutto_client_validation_by_id()
-    # test_plutto_client_watchlists()
+    # test_plutto_client_watchlists() 
     # test_plutto_watchlist_response()
 
-    run_gesintel_watchlist_check()
+    # run_gesintel_watchlist_check()
+
+    # run_stats()
+    check_stats_compliance()
+
 
     # validation_control_flow()
 
@@ -181,6 +185,18 @@ def test_equifax_client():
     
     print("\nFin de la prueba")
 
+
+def run_stats():
+    excel_file = "Datos clientes.xlsx"
+    validation_flow = ValidationControlFlow(excel_file)
+
+    validation_flow.run_stats()
+
+def check_stats_compliance():
+    excel_file = "Datos clientes.xlsx"
+    validation_flow = ValidationControlFlow(excel_file)
+
+    validation_flow.check_completeness()
 
 if __name__ == '__main__':
     main()

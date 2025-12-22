@@ -4,5 +4,6 @@ output_files/
 casos.json
 .DS_Store
 __pychache__/
-*.__pychache__
+*.pyc
 ~$*.xlsx
+*.xlsx

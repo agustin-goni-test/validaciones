@@ -156,7 +156,291 @@ class ValidationControlFlow:
 
             else:  
                 print(f"El informe para el RUT {rut} ya estaba disponible.")
-                            
+
+
+
+    def run_stats(self) -> None:
+        '''
+        Run a statistics workflow for Plutto.
+        '''
+        if self.df.empty:
+            print("Archivo vacío. No hay datos para trabajar")
+            return False
+        
+        self.output_file = "plutto_stats_output.xlsx"
+
+        EXCEL_COLUMNS = [
+            "RUT",
+            "Actividades",
+            "País",
+            "Tipo_compañia",
+            "Fecha_constitución",
+            "Gerentes",
+            "Representantes",
+            "Accionistas",
+            "Total_participación",
+        ]
+
+        pd.DataFrame(columns=EXCEL_COLUMNS).to_excel(
+            self.output_file,
+            index=False,
+            engine='openpyxl')
+        
+        block_size = 10
+        
+        for start in range(0, len(self.df), block_size):
+            end = min(start + block_size, len(self.df))
+            block = self.df.iloc[start:end]
+
+            print(f"Procesando filas {start} a {end - 1}...") 
+
+            self._obtain_stats_block(block)
+
+            # input("Continuar con el siguiente bloque...")
+
+            # time.sleep(1)
+
+
+    def check_completeness(self) -> None:
+        '''
+        Check if the data is present
+        '''
+
+        self.output_file = "plutto_stats_output.xlsx"
+
+        try:
+            df = pd.read_excel(self.output_file)
+        except FileNotFoundError:
+            raise RuntimeError(
+                f"Output file not found: {self.output_path}. "
+                "Run run_stats() first."
+            )
+        
+        df_valid = df[df["RUT"].notna()]
+        total_rows = len(df_valid)
+
+        # Rule 1: at least 1 activity
+        rule_activities = df_valid['Actividades'].fillna(0) >= 1
+        success_rate_activities = round(
+            (rule_activities.sum() / total_rows) * 100 , 2)
+
+        # Rule 2: País cannot be null or N/A
+        rule_country  = df_valid['País'].notna() & (df_valid['País'] != "N/A")
+        success_rate_country = round(
+            (rule_country.sum() / total_rows) * 100 , 2)
+
+        # Rule 3: Tipo_compañia cannot be null or N/A
+        rule_type = df_valid['Tipo_compañia'].notna() & (df_valid['Tipo_compañia'] != "N/A")
+        success_rate_company_type = round(
+            (rule_type.sum() / total_rows) * 100 , 2)
+        
+        # Rule 4: Fecha_constitución cannot be null or N/A
+        rule_formation_date = df_valid['Fecha_constitución'].notna() & (df_valid['Fecha_constitución'] != "N/A")
+        success_rate_date = round(
+            (rule_formation_date.sum() / total_rows) * 100 , 2)
+        
+        # Rule 5: Managers must be at least 1
+        rule_managers = df_valid['Gerentes'].fillna(0) >= 1
+        success_rate_managers = round(
+            (rule_managers.sum() / total_rows) * 100 , 2)
+
+        # Rule 6: Representatives must be at least 1
+        rule_representatives = df_valid['Representantes'].fillna(0) >= 1
+        success_rate_representatives = round(
+            (rule_representatives.sum() / total_rows) * 100 , 2)
+
+        # Rule 7: Shareholders must be at least 1
+        rule_shareholders = df_valid['Accionistas'].fillna(0) >= 1
+        success_rate_shareholders = round(
+            (rule_shareholders.sum() / total_rows) * 100 , 2)
+
+        # Rule 8: Total participation must be exactly 100%
+        rule_participation = df_valid['Total_participación'].fillna(0) == 100.0
+        success_rate_participation = round(
+            (rule_participation.sum() / total_rows) * 100 , 2)  
+        
+        # All rules combined
+        all_rules = (
+            rule_activities &
+            rule_country &
+            rule_type &
+            rule_formation_date &
+            rule_managers &
+            rule_representatives &
+            rule_shareholders &
+            rule_participation
+            )
+        
+        overall_success_rate = round(
+            (all_rules.sum() / total_rows) * 100 , 2)
+
+        print(f"\n\nTotal de filas: {total_rows}")
+        print(f"Porcentaje de filas con al menos 1 actividad: {success_rate_activities}%")
+        print(f"Porcentaje de filas con país válido: {success_rate_country}%")
+        print(f"Porcentaje de filas con tipo de compañía válido: {success_rate_company_type}%")
+        print(f"Porcentaje de filas con fecha de constitución válida: {success_rate_date}%")
+        print(f"Porcentaje de filas con al menos 1 gerente: {success_rate_managers}%")
+        print(f"Porcentaje de filas con al menos 1 representante: {success_rate_representatives}%")
+        print(f"Porcentaje de filas con al menos 1 accionista: {success_rate_shareholders}%")
+        print(f"Porcentaje de filas con participación total del 100%: {success_rate_participation}%")
+        print(f"Porcentaje de filas que cumplen todas las reglas: {overall_success_rate}%")
+
+        summary_df = pd.DataFrame([
+            {"Regla": "Al menos 1 actividad", "Porcentaje": success_rate_activities},
+            {"Regla": "País válido", "Porcentaje": success_rate_country},
+            {"Regla": "Tipo de compañía válido", "Porcentaje": success_rate_company_type},
+            {"Regla": "Fecha de constitución válida", "Porcentaje": success_rate_date},
+            {"Regla": "Al menos 1 gerente", "Porcentaje": success_rate_managers},
+            {"Regla": "Al menos 1 representante", "Porcentaje": success_rate_representatives},
+            {"Regla": "Al menos 1 accionista", "Porcentaje": success_rate_shareholders},
+            {"Regla": "Participación total = 100%", "Porcentaje": success_rate_participation},
+            {"Regla": "TODAS las reglas", "Porcentaje": overall_success_rate},
+        ])
+
+        with pd.ExcelWriter(
+            self.output_file,
+            engine='openpyxl',
+            mode='a',
+            if_sheet_exists='replace'
+            ) as writer:
+            summary_df.to_excel(
+                writer,
+                index=False,
+                sheet_name='Resumen'
+            )
+
+    
+
+
+        # # Check if columns "Disponible" exists in DataFrame
+        # if 'Disponible' not in self.df.columns:
+        #     print(f"Columna 'Disponible' no encontrada en el archivo. Es necesario preparar los datos primero.")
+        #     return False
+        
+        # # else:
+
+    
+    def _append_stats_to_output(self, row: dict) -> None:
+        '''
+        Appends a single row of stats to the output Excel file.
+        '''
+        df_row = pd.DataFrame([row])
+
+        with pd.ExcelWriter(
+            self.output_file,
+            engine='openpyxl',
+            mode='a',
+            if_sheet_exists='overlay'
+            ) as writer:
+            sheet = writer.sheets['Sheet1']
+            startrow = sheet.max_row
+
+            df_row.to_excel(
+                writer,
+                index=False,
+                header=False,
+                startrow=startrow
+            )
+
+
+
+    def _obtain_stats_block(self, block: pd.DataFrame) -> None:
+        '''
+        Get Plutto report to compile stats about the commerce.
+        '''
+
+        plutto_client = get_plutto_client()
+
+        # Take each row from the block
+        for index, row in block.iterrows():
+            rut = row['Rut']
+            print(f"Procesando RUT: {rut} en índice {index}")
+
+            # Here you would call the Plutto client to get the report
+            found, report = plutto_client.obtain_validation_by_tin(rut)
+            
+            # If report was found
+            if found:
+                    # Obtain entity section
+                    entity = (
+                        report
+                        .get("entity_validation", {})
+                        .get("last_validation", {})
+                        .get("entity", {})
+                    )
+
+                    # Obtain other subsections needed for stats
+                    tax_data = entity.get("tax_office_data", {})
+                    formation = entity.get("formation", {})
+                    administration = formation.get("administration", {})
+                    equity = formation.get("equity", {})
+                    
+                    # Obtain activities and their count
+                    if tax_data is None:
+                        activities = []
+                    else:
+                        activities = tax_data.get("activities", [])
+                    num_activities = len(activities)
+
+                    # Obtain formations stats
+                    formation_country = formation.get("country", "N/A")
+                    company_type = formation.get("company_type", "N/A")
+                    formation_date = formation.get("constitution_date", "N/A")
+
+                    # Obtain administration stats
+                    managers = administration.get("managers", [])
+                    num_managers = len(managers)
+
+                    # Obtain representatives stats
+                    representatives = administration.get("sii_representatives", [])
+                    num_representatives = len(representatives)
+
+                    # Obtain equity stats
+                    shareholders = equity.get("shareholders", [])
+                    num_shareholders = len(shareholders)
+
+                    # Determine participation total
+                    total_participation = 0.0
+                    for shareholder in shareholders:
+                        participation_raw = shareholder.get("particitation", 0.0)
+                        participation = float(participation_raw) if participation_raw is not None else 0.0
+                        total_participation += participation
+
+                    if total_participation <= 1.0:
+                        total_participation = total_participation * 100
+
+                    # Print out results
+                    print(f"Número de actividades: {num_activities}")
+                    print(f"País de constitución: {formation_country}")
+                    print(f"Tipo de empresa: {company_type}")
+                    print(f"Fecha de constitución: {formation_date}")
+                    print(f"Número de gerentes: {num_managers}")
+                    print(f"Número de representantes: {num_representatives}")
+                    print(f"Número de accionistas: {num_shareholders}")
+                    print(f"Total de participación de accionistas: {total_participation}%")
+
+                    stats_row = {
+                        "RUT": rut,
+                        "Actividades": num_activities,
+                        "País": formation_country,
+                        "Tipo_compañia": company_type,
+                        "Fecha_constitución": formation_date,
+                        "Gerentes": num_managers,
+                        "Representantes": num_representatives,
+                        "Accionistas": num_shareholders,
+                        "Total_participación": total_participation,
+                    }
+
+                    self._append_stats_to_output(stats_row)
+
+
+            # Else (report not found, 404, must create it)
+            else:
+                pass
+
+
+
+
             
     def validate_availability(self) -> bool:
         '''Validate if all reports are already available.
