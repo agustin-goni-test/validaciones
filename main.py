@@ -187,13 +187,15 @@ def test_equifax_client():
 
 
 def run_stats():
-    excel_file = "Datos clientes.xlsx"
+    # excel_file = "Datos clientes.xlsx"
+    excel_file = "Ventas.xlsx"
     validation_flow = ValidationControlFlow(excel_file)
 
     validation_flow.run_stats()
 
 def check_stats_compliance():
-    excel_file = "Datos clientes.xlsx"
+    # excel_file = "Datos clientes.xlsx"
+    excel_file = "Ventas.xlsx"
     validation_flow = ValidationControlFlow(excel_file)
 
     validation_flow.check_completeness()

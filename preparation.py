@@ -21,10 +21,36 @@ class ValidationControlFlow:
             self.df = pd.read_excel(excel_file)
             print(f"Loaded Excel file: {excel_file} with {len(self.df)} rows.")
 
+            # Check if elimination of duplicates is needed
+            self._eliminate_duplicates()
+
         except FileNotFoundError:
             raise FileNotFoundError(f"Excel file '{excel_file}' not found.")
         except Exception as e:
             raise RuntimeError(f"Failed to load Excel file '{excel_file}': {str(e)}")
+        
+    
+    def _eliminate_duplicates(self) -> None:
+        '''
+        Eliminates duplicate RUTs from the file.
+        First, it checks if duplicates exist.
+        '''
+
+        # Check if RUTs are duplicated
+        if self.df['Rut'].duplicated().any():
+            initial_count = len(self.df)
+
+            # Remove duplicates and update
+            self.df = self.df.drop_duplicates(subset=['Rut'], keep="first")
+            final_count = len(self.df)
+            print(f"Removed {initial_count - final_count} duplicated RUTs.")
+
+            # Save to Excel to process this file
+            self.df.to_excel(self.filename, index=False)
+            print(f"Updated file to: {self.filename}")
+        
+        else:
+            print("No duplicates RUTs found.")
         
     
     def prepare_data(self) -> bool:
@@ -179,6 +205,7 @@ class ValidationControlFlow:
             "Representantes",
             "Accionistas",
             "Total_participación",
+            "Fuente"
         ]
 
         pd.DataFrame(columns=EXCEL_COLUMNS).to_excel(
@@ -198,7 +225,7 @@ class ValidationControlFlow:
 
             # input("Continuar con el siguiente bloque...")
 
-            # time.sleep(1)
+            time.sleep(1)
 
 
     def check_completeness(self) -> None:
@@ -216,7 +243,11 @@ class ValidationControlFlow:
                 "Run run_stats() first."
             )
         
+        
         df_valid = df[df["RUT"].notna()]
+
+        df_valid = df_valid[df_valid["Fuente"] != "Persona natural"]
+
         total_rows = len(df_valid)
 
         # Rule 1: at least 1 activity
@@ -257,7 +288,12 @@ class ValidationControlFlow:
         # Rule 8: Total participation must be exactly 100%
         rule_participation = df_valid['Total_participación'].fillna(0) == 100.0
         success_rate_participation = round(
-            (rule_participation.sum() / total_rows) * 100 , 2)  
+            (rule_participation.sum() / total_rows) * 100 , 2)
+
+        # Check percentage of cases belonging to electronic registry
+        rule_registry = df_valid["Fuente"] == "Registro Electrónico"
+        percentage_electronic_registry = round(
+            (rule_registry.sum() / total_rows) * 100, 2) 
         
         # All rules combined
         all_rules = (
@@ -284,6 +320,7 @@ class ValidationControlFlow:
         print(f"Porcentaje de filas con al menos 1 accionista: {success_rate_shareholders}%")
         print(f"Porcentaje de filas con participación total del 100%: {success_rate_participation}%")
         print(f"Porcentaje de filas que cumplen todas las reglas: {overall_success_rate}%")
+        print(f"Porcentaje de filas declaradas en registro electrónico: {percentage_electronic_registry}")
 
         summary_df = pd.DataFrame([
             {"Regla": "Al menos 1 actividad", "Porcentaje": success_rate_activities},
@@ -295,6 +332,7 @@ class ValidationControlFlow:
             {"Regla": "Al menos 1 accionista", "Porcentaje": success_rate_shareholders},
             {"Regla": "Participación total = 100%", "Porcentaje": success_rate_participation},
             {"Regla": "TODAS las reglas", "Porcentaje": overall_success_rate},
+            {"Regla": "Datos obtenidos de registro electrónico", "Porcentaje": percentage_electronic_registry}
         ])
 
         with pd.ExcelWriter(
@@ -374,6 +412,7 @@ class ValidationControlFlow:
                     formation = entity.get("formation", {})
                     administration = formation.get("administration", {})
                     equity = formation.get("equity", {})
+                    category = entity.get("category", {})
                     
                     # Obtain activities and their count
                     if tax_data is None:
@@ -386,6 +425,21 @@ class ValidationControlFlow:
                     formation_country = formation.get("country", "N/A")
                     company_type = formation.get("company_type", "N/A")
                     formation_date = formation.get("constitution_date", "N/A")
+                    registry = formation.get("registry", {})
+                    
+                    # Determine the source of the information
+                    if registry is None:
+                        if category == "cl_registral":
+                            source = "Registral"
+                        elif category == "cl_person" or category == "person":
+                            source = "Persona natural"
+                        else:
+                            source = "Desconocida"
+                    else:
+                        if category == "cl_eud":
+                            source = "Registro Electrónico"
+                        else:
+                            source = "Desconocida"
 
                     # Obtain administration stats
                     managers = administration.get("managers", [])
@@ -418,6 +472,7 @@ class ValidationControlFlow:
                     print(f"Número de representantes: {num_representatives}")
                     print(f"Número de accionistas: {num_shareholders}")
                     print(f"Total de participación de accionistas: {total_participation}%")
+                    print(f"Fuente de datos del comercio: {source}")
 
                     stats_row = {
                         "RUT": rut,
@@ -429,6 +484,7 @@ class ValidationControlFlow:
                         "Representantes": num_representatives,
                         "Accionistas": num_shareholders,
                         "Total_participación": total_participation,
+                        "Fuente": source
                     }
 
                     self._append_stats_to_output(stats_row)
