@@ -246,7 +246,9 @@ class ValidationControlFlow:
         
         df_valid = df[df["RUT"].notna()]
 
+        # Filter to only consider the required IDs.
         df_valid = df_valid[df_valid["Fuente"] != "Persona natural"]
+        # df_valid = df_valid[df_valid["Fuente"] != "Registro Electrónico"]
 
         total_rows = len(df_valid)
 
